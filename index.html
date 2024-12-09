@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPTME - Crypto Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+        }
+
+        body {
+            background-color: #1a1a1a;
+            color: #00ff00;
+            height: 100vh;
+            padding: 20px;
+        }
+
+        #console {
+            background-color: #000;
+            height: 100%;
+            padding: 20px;
+            overflow-y: auto;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+
+        #header {
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 14px;
+            letter-spacing: 1px;
+            white-space: pre;
+            line-height: 1.2;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+
+        #chat-area {
+            height: calc(100% - 180px);
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            margin-bottom: 10px;
+            line-height: 1.4;
+            font-size: 16px;
+        }
+
+        .ai-message::before {
+            content: "GPTME> ";
+            color: #00ff00;
+            font-weight: bold;
+        }
+
+        .user-message::before {
+            content: "user@crypto:~$ ";
+            color: #00ff00;
+            font-weight: bold;
+        }
+
+        #input-area {
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #00ff00;
+            padding-top: 10px;
+        }
+
+        #prompt {
+            color: #00ff00;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        #user-input {
+            flex: 1;
+            background-color: transparent;
+            border: none;
+            color: #00ff00;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .system-message {
+            color: #888;
+            font-style: italic;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="console">
+        <div id="header">
+██████╗  ██████╗ ████████╗███╗   ███╗███████╗
+██╔════╝ ██╔══██╗╚══██╔══╝████╗ ████║██╔════╝
+██║  ███╗██████╔╝   ██║   ██╔████╔██║█████╗  
+██║   ██║██╔═══╝    ██║   ██║╚██╔╝██║██╔══╝  
+╚██████╔╝██║        ██║   ██║ ╚═╝ ██║███████╗
+ ╚═════╝ ╚═╝        ╚═╝   ╚═╝     ╚═╝╚══════╝
+           Crypto Assistant v1.0
+        </div>
+
+        <div class="system-message">
+            [System] GPTME Crypto Assistant ready... Type 'help' to see available commands
+        </div>
+
+        <div id="chat-area">
+            <div class="message ai-message">
+                Welcome to GPTME Crypto Assistant. How can I help you today?
+            </div>
+        </div>
+
+        <div id="input-area">
+            <span id="prompt">user@crypto:~$</span>
+            <input type="text" id="user-input" autofocus>
+        </div>
+    </div>
+
+    <script>
+        const userInput = document.getElementById('user-input');
+        const chatArea = document.getElementById('chat-area');
+
+        const cryptoResponses = {
+            'price': {
+                'bitcoin': 'Bitcoin (BTC) current price: $65,432.21 (+2.3%)',
+                'ethereum': 'Ethereum (ETH) current price: $3,456.78 (+1.2%)',
+                'default': 'Please specify a valid cryptocurrency'
+            },
+            'info': {
+                'bitcoin': 'Bitcoin (BTC)\nMarket Cap: $1.2T\nVolume: $48.5B\n24h High: $66,789\n24h Low: $64,123\nCirculating Supply: 19.5M BTC',
+                'ethereum': 'Ethereum (ETH)\nMarket Cap: $420B\nVolume: $15.2B\n24h High: $3,589\n24h Low: $3,345\nCirculating Supply: 120.5M ETH',
+                'default': 'Cryptocurrency information not found'
+            },
+            'market': 'Global Market Cap: $2.85T (+1.2%)\nBTC Dominance: 42.3%\nETH Dominance: 18.7%\n24h Volume: $125.8B',
+            'trending': '1. Bitcoin (BTC)\n2. Ethereum (ETH)\n3. Solana (SOL)\n4. Cardano (ADA)\n5. Polkadot (DOT)',
+            'defi': 'Total Value Locked: $185.2B\nTop Protocol: Uniswap\nDaily Volume: $8.2B\nUnique Addresses: 4.8M',
+            'nft': 'Total Market Cap: $2.8B\nDaily Volume: $124.5M\nTop Collection: Bored Ape YC\nFloor Price: 65.4 ETH',
+            'gas': 'Ethereum Gas Fees:\nSlow (15+ min): 25 gwei ($2.1)\nAverage (5 min): 35 gwei ($2.9)\nFast (2 min): 45 gwei ($3.8)',
+            'fear': 'Current Fear & Greed Index: 65 (Greed)\nYesterday: 62\nLast Week: 55\nLast Month: 48',
+            'exchanges': '1. Binance - Volume: $24.5B\n2. Coinbase - Volume: $12.3B\n3. Kraken - Volume: $8.7B\n4. FTX - Volume: $7.2B',
+            'news': '[Latest] Bitcoin ETF sees record inflow\n[Market] Ethereum upgrade scheduled next month\n[DeFi] New protocol launches with $100M TVL',
+            'help': 'Available commands:\n\nprice [coin]: Get current price\ninfo [coin]: Get detailed info\nconvert [amount] [from] [to]: Convert crypto\nmarket: Market overview\ntrending: Show trending coins\ndefi: DeFi statistics\nnft: NFT market overview\ngas: Current gas fees\nfear: Fear & Greed Index\nexchanges: Top exchanges\nnews: Latest news\nwhale [coin]: Large transactions\nhelp: Show this message\nclear: Clear screen'
+        };
+
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const message = userInput.value;
+                if (message.trim() !== '') {
+                    // Add user message
+                    const userMsg = document.createElement('div');
+                    userMsg.className = 'message user-message';
+                    userMsg.textContent = message;
+                    chatArea.appendChild(userMsg);
+
+                    // Process command and add AI response
+                    const aiMsg = document.createElement('div');
+                    aiMsg.className = 'message ai-message';
+                    
+                    const command = message.toLowerCase().split(' ');
+                    
+                    if (command[0] === 'clear') {
+                        chatArea.innerHTML = '';
+                    } else if (command[0] === 'help') {
+                        aiMsg.textContent = cryptoResponses['help'];
+                        chatArea.appendChild(aiMsg);
+                    } else if (['price', 'info'].includes(command[0]) && command[1]) {
+                        aiMsg.textContent = cryptoResponses[command[0]][command[1]] || cryptoResponses[command[0]]['default'];
+                        chatArea.appendChild(aiMsg);
+                    } else if (['market', 'trending', 'defi', 'nft', 'gas', 'fear', 'exchanges', 'news'].includes(command[0])) {
+                        aiMsg.textContent = cryptoResponses[command[0]];
+                        chatArea.appendChild(aiMsg);
+                    } else if (command[0] === 'convert' && command[1] && command[2] && command[3]) {
+                        aiMsg.textContent = `Converting ${command[1]} ${command[2].toUpperCase()} to ${command[3].toUpperCase()}...`;
+                        chatArea.appendChild(aiMsg);
+                    } else if (command[0] === 'whale' && command[1]) {
+                        aiMsg.textContent = `Tracking large transactions for ${command[1].toUpperCase()}:\nLast hour: 3 transactions over $1M\nBiggest: 150 ${command[1].toUpperCase()} ($9.8M) to Binance`;
+                        chatArea.appendChild(aiMsg);
+                    } else {
+                        aiMsg.textContent = 'Command not recognized. Type "help" for available commands.';
+                        chatArea.appendChild(aiMsg);
+                    }
+
+                    // Clear input
+                    userInput.value = '';
+
+                    // Auto scroll to bottom
+                    chatArea.scrollTop = chatArea.scrollHeight;
+                }
+            }
+        });
+
+        // Auto focus input on load
+        window.onload = function() {
+            userInput.focus();
+        };
+    </script>
+</body>
+</html>
